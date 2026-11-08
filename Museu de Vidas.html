@@ -1,0 +1,1132 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Museu de Vidas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gloock&family=Hanken+Grotesk:wght@400;500;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: palco de vídeo 16:9 (9:16 no celular), cinco capítulos fixos no topo, legendas por palavra, barra de progresso com relógio de 7 minutos.
+   Look: noite verde-azulada com luz de lâmpada em ocre, sóbrio e acadêmico. Medidas em "u" (calc(var(--u)*1) = 1% da largura do palco), convertidas no build. */
+:root{
+  color-scheme:dark;
+  --bg:#071719;
+  --stage:#0f2a2d;
+  --stage-2:#17393d;
+  --ink:#f2eee5;
+  --muted:#a8bfbc;
+  --ochre:#f2b84b;
+  --sage:#8dbfa8;
+  --steel:#6aa0a8;
+  --clay:#d98e73;
+  --paper:#ebe7dc;
+  --paper-2:#d9d4c6;
+  --paper-ink:#2b2a26;
+  --line:rgba(242,238,229,.16);
+  --dim:rgba(255,255,255,.13);
+  --panel:rgba(255,255,255,.045);
+  --display:'Gloock',Georgia,'Times New Roman',serif;
+  --body:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --hand:'Caveat','Bradley Hand','Segoe Print',cursive;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body)}
+button{font:inherit;color:inherit}
+a{color:var(--ochre)}
+.app{max-width:1240px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bg)}
+
+/* ---------- palco ---------- */
+.stage{position:relative;container-type:size;aspect-ratio:16/9;width:100%;max-width:min(1200px,max(560px,calc((100vh - 130px) * 16 / 9)));margin:0 auto;overflow:hidden;border-radius:14px;border:1px solid var(--line);
+  background:radial-gradient(60% 80% at 88% 8%,rgba(242,184,75,.16),transparent 60%),radial-gradient(70% 70% at 5% 100%,rgba(141,191,168,.12),transparent 60%),var(--stage)}
+.brand{--u:1cqw;position:absolute;z-index:3;top:calc(var(--u)*2.4);left:calc(var(--u)*5);display:flex;align-items:center;gap:calc(var(--u)*.9);font-size:calc(var(--u)*1.45);letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.brand i{width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);border-radius:50%;background:var(--ochre);box-shadow:0 0 calc(var(--u)*1.6) var(--ochre);animation:rec 1.6s ease-in-out infinite alternate}
+@keyframes rec{from{opacity:.35}}
+
+/* capítulos: números sempre visíveis, nome só no capítulo atual */
+.chap{--u:1cqw;position:absolute;z-index:3;top:calc(var(--u)*2.2);right:calc(var(--u)*5);display:flex;align-items:center;gap:calc(var(--u)*1.6);pointer-events:none;font-size:calc(var(--u)*1.3);text-transform:uppercase;font-weight:700;letter-spacing:.12em;color:var(--muted)}
+.chap span{position:relative;display:inline-flex;align-items:baseline;padding-bottom:calc(var(--u)*.7);opacity:.38;transition:opacity .5s,color .5s}
+.chap b{font-family:var(--display);font-weight:400;font-size:calc(var(--u)*1.7);letter-spacing:0}
+.chap i{font-style:normal;display:inline-block;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:0;transition:max-width .7s ease,opacity .5s,margin .5s}
+.chap span::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--u)*.25);border-radius:calc(var(--u)*1);background:var(--ochre);transform:scaleX(0);transform-origin:left;transition:transform .7s ease}
+.chap span.done{opacity:.7}
+.chap span.on{opacity:1;color:var(--ochre)}
+.chap span.on i{max-width:calc(var(--u)*22);opacity:1;margin-left:calc(var(--u)*.8)}
+.chap span.on::after{transform:scaleX(1)}
+
+/* partículas de fundo */
+.amb{--u:1cqw;position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.amb i{position:absolute;bottom:calc(var(--u)*-2);left:var(--x);width:calc(var(--u)*var(--sz));height:calc(var(--u)*var(--sz));border-radius:50%;background:var(--ochre);opacity:0;animation:drift var(--t) linear var(--dl) infinite}
+@keyframes drift{0%{transform:translateY(0);opacity:0}15%{opacity:.32}85%{opacity:.2}100%{transform:translateY(calc(var(--u)*-62));opacity:0}}
+
+.slide{--u:1cqw;position:absolute;inset:0;display:flex;flex-direction:column;justify-content:safe center;gap:calc(var(--u)*2.6);padding:calc(var(--u)*7.5) calc(var(--u)*6) calc(var(--u)*11.5);opacity:0;visibility:hidden;transition:opacity .5s ease,visibility 0s linear .5s}
+.slide.active{opacity:1;visibility:visible;transition-delay:0s}
+.row{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--u)*4)}
+.col{display:flex;flex-direction:column;gap:calc(var(--u)*1.6);min-width:0}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*2.6)}
+
+/* tipografia */
+h1,h2,h3,h4{margin:0;font-weight:400;text-wrap:balance}
+h1{font-family:var(--display);font-size:calc(var(--u)*8.6);line-height:1}
+h2{font-family:var(--display);font-size:calc(var(--u)*4.4);line-height:1.08}
+h3{font-family:var(--body);font-weight:700;font-size:calc(var(--u)*2.1);line-height:1.2}
+p{margin:0}
+.eyebrow{font-size:calc(var(--u)*1.4);letter-spacing:.18em;text-transform:uppercase;color:var(--ochre);font-weight:700}
+.lead{font-size:calc(var(--u)*2.5);line-height:1.4;color:var(--ink);max-width:calc(var(--u)*42)}
+.sub{font-size:calc(var(--u)*1.9);line-height:1.45;color:var(--muted);max-width:calc(var(--u)*42)}
+.note{font-size:calc(var(--u)*1.35);line-height:1.4;color:var(--muted)}
+em{font-style:normal;color:var(--ochre)}
+.mb{display:none}
+
+/* legenda estilo vídeo */
+.cap{position:absolute;z-index:2;left:0;right:0;bottom:0;padding:calc(var(--u)*5) calc(var(--u)*6) calc(var(--u)*2.4);text-align:center;font-size:calc(var(--u)*1.9);line-height:1.4;font-weight:500;color:var(--ink);background:linear-gradient(to top,rgba(5,16,18,.9),rgba(5,16,18,0))}
+.cap span{display:inline-block}
+.nocap .cap{display:none}
+
+/* animações: o estado final é o estado natural da página */
+@keyframes rise{from{opacity:0;transform:translateY(calc(var(--u)*2))}}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{from{opacity:0;transform:scale(.55)}}
+@keyframes grow{from{transform:scaleX(0)}}
+@keyframes growY{from{transform:scaleY(0)}}
+@keyframes lineIn{from{width:0}}
+@keyframes light{from{filter:brightness(.18) saturate(.2);box-shadow:none}}
+@keyframes eq{from{transform:scaleY(.3)}}
+@keyframes scrib{from{stroke-dashoffset:1}}
+@keyframes bob{to{transform:translateY(calc(var(--u)*-.8))}}
+@keyframes drawck{from{stroke-dashoffset:1}}
+@keyframes fly{from{opacity:0;transform:translate(var(--fx,0),var(--fy,0)) scale(.4) rotate(18deg)}}
+@keyframes slidein{from{opacity:0;transform:translateX(calc(var(--u)*-3))}}
+@keyframes flip{0%{opacity:1;transform:rotateY(0)}88%{opacity:1;transform:rotateY(-170deg)}100%{opacity:0;transform:rotateY(-180deg)}}
+@keyframes glow{50%{box-shadow:0 0 calc(var(--u)*5) rgba(242,184,75,.45)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes ripple{from{transform:scale(1);opacity:.8}to{transform:scale(2.7);opacity:0}}
+@keyframes vanish{0%,35%{opacity:1}100%{opacity:.1}}
+@keyframes travel{to{transform:translateX(60px)}}
+@keyframes dotin{from{background:var(--dim);transform:scale(.6)}}
+@keyframes tickon{from{background:var(--dim)}}
+@keyframes sweep{0%{left:0;opacity:1}94%{opacity:1}100%{left:100%;opacity:0}}
+@keyframes pulse{50%{box-shadow:0 0 0 calc(var(--u)*1.1) rgba(242,184,75,0)}}
+
+.slide.active .a{animation:rise .8s var(--d,0s) backwards}
+.slide.active .f{animation:fade .8s var(--d,0s) backwards}
+.slide.active .p{animation:pop .6s var(--d,0s) cubic-bezier(.3,1.5,.5,1) backwards}
+.slide.active .cap span{animation:fade .45s calc(.5s + var(--i) * 70ms) backwards}
+
+/* ---------- livro aberto ---------- */
+.spread{position:relative;display:grid;grid-template-columns:1fr 1fr;width:min(100%,calc(var(--u)*44));aspect-ratio:1.45;perspective:calc(var(--u)*140);filter:drop-shadow(0 calc(var(--u)*2.4) calc(var(--u)*3) rgba(0,0,0,.45));flex:none}
+.pg{position:relative;background:var(--paper);color:var(--paper-ink);padding:calc(var(--u)*3) calc(var(--u)*2.8);min-width:0;overflow:hidden}
+.pg.l{border-radius:calc(var(--u)*.8) 0 0 calc(var(--u)*.8);box-shadow:inset calc(var(--u)*-2.2) 0 calc(var(--u)*2.6) calc(var(--u)*-1.6) rgba(0,0,0,.22);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*1.4)}
+.pg.r{border-radius:0 calc(var(--u)*.8) calc(var(--u)*.8) 0;box-shadow:inset calc(var(--u)*2.2) 0 calc(var(--u)*2.6) calc(var(--u)*-1.6) rgba(0,0,0,.22);display:flex;flex-direction:column;gap:calc(var(--u)*1.5)}
+.portrait{width:62%;aspect-ratio:4/5;border-radius:calc(var(--u)*.6);background:var(--paper-2);border:calc(var(--u)*.25) solid rgba(43,42,38,.22);overflow:hidden;position:relative;transition:background .3s}
+.portrait svg{position:absolute;inset:0;width:100%;height:100%}
+.portrait .sh{fill:var(--tone,#6aa0a8);transition:fill .4s}
+.bars{display:grid;gap:calc(var(--u)*1.1);width:100%}
+.bars i{display:block;height:calc(var(--u)*.7);border-radius:calc(var(--u)*1);background:#bdb8ab;width:var(--w,100%)}
+.bars.dark i{background:#b3ae9f}
+.bars.w55{width:55%}.bars.w62{width:62%}
+.bars i.title{height:calc(var(--u)*1.3);background:#a9a495}
+.slide.active .bars i{animation:lineIn .9s var(--d,0s) ease-out backwards}
+.slide.active .portrait{animation:pop .7s .5s backwards}
+.pno{position:absolute;bottom:calc(var(--u)*1.2);font-size:calc(var(--u)*1.2);color:#8b867a;font-weight:700}
+.pg.l .pno{left:calc(var(--u)*2.4)}.pg.r .pno{right:calc(var(--u)*2.4)}
+.ribbon{position:absolute;top:calc(var(--u)*-.4);right:calc(var(--u)*3.4);width:calc(var(--u)*1.8);height:calc(var(--u)*6.4);background:var(--ochre);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);z-index:2}
+.slide.active .ribbon{animation:rise .8s 1.4s backwards}
+
+/* 1 abertura */
+.s1 .row{flex:1}
+.road{display:flex;flex-wrap:wrap;gap:calc(var(--u)*1) calc(var(--u)*2.2);margin-top:calc(var(--u)*.6);max-width:calc(var(--u)*44)}
+.road span{display:inline-flex;align-items:baseline;gap:calc(var(--u)*.7);font-size:calc(var(--u)*1.5);color:var(--muted)}
+.road b{font-family:var(--display);font-weight:400;color:var(--ochre);font-size:calc(var(--u)*1.9)}
+
+/* 2 estante */
+.shelf{display:flex;align-items:flex-end;gap:calc(var(--u)*.8);padding:0 calc(var(--u)*1);border-bottom:calc(var(--u)*.9) solid #0a1c1f;position:relative;height:calc(var(--u)*13);width:100%}
+.shelf i{flex:1;max-width:calc(var(--u)*5);height:var(--h);background:var(--c);border-radius:calc(var(--u)*.4) calc(var(--u)*.4) 0 0;position:relative}
+.shelf i::after{content:"";position:absolute;left:18%;right:18%;top:12%;height:calc(var(--u)*.4);background:rgba(255,255,255,.35);border-radius:calc(var(--u)*1)}
+.slide.active .shelf i{animation:light 1.4s calc(.3s + var(--n) * .2s) ease-out backwards}
+.quote{font-size:calc(var(--u)*1.7);color:var(--muted);line-height:1.45;max-width:calc(var(--u)*46)}
+.quote b{color:var(--ink);font-weight:500}
+
+/* cartões e painéis */
+.panel,.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--u)*1.4);padding:calc(var(--u)*2.4);display:flex;flex-direction:column;gap:calc(var(--u)*1.1);min-width:0}
+.panel p,.card p{font-size:calc(var(--u)*1.6);line-height:1.45;color:var(--muted)}
+.tag{font-size:calc(var(--u)*1.25);letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--sage)}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*2.4)}
+.card .ic{width:calc(var(--u)*5);height:calc(var(--u)*5);color:var(--ochre)}
+.bars2 rect{transform-box:fill-box;transform-origin:center}
+.slide.active .bars2 rect{animation:eq 1s ease-in-out infinite alternate;animation-delay:var(--d)}
+.scribble{stroke-dasharray:1;stroke-dashoffset:0}
+.slide.active .scribble{animation:scrib 2.2s ease-in-out infinite alternate}
+.slide.active .bookic{animation:bob 1.1s ease-in-out infinite alternate}
+
+/* 3 duas perdas */
+.viz{position:relative;height:calc(var(--u)*8);display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*1)}
+.viz.lines i{display:block;height:calc(var(--u)*.8);border-radius:calc(var(--u)*1);background:var(--ochre);width:var(--w)}
+.slide.active .viz.lines i{animation:vanish 4.4s calc(.8s + var(--n) * .7s) ease-in forwards}
+.viz svg{width:100%;height:100%}
+.slide.active .mover{animation:travel 2.2s ease-in-out infinite alternate}
+
+/* 4 censo */
+.s4 .row{gap:calc(var(--u)*5)}
+.big{font-family:var(--display);font-size:calc(var(--u)*10);line-height:1;color:var(--ochre);font-variant-numeric:tabular-nums}
+.big small{font-family:var(--body);font-size:calc(var(--u)*3.2);color:var(--ink);margin-left:calc(var(--u)*.8)}
+.mid{font-family:var(--display);font-size:calc(var(--u)*5.6);line-height:1;color:var(--sage);font-variant-numeric:tabular-nums}
+.lab{font-size:calc(var(--u)*1.7);color:var(--muted);line-height:1.4;max-width:calc(var(--u)*30)}
+.dotbox{display:flex;flex-direction:column;gap:calc(var(--u)*1.2);flex:none}
+.dots{display:grid;grid-template-columns:repeat(10,1fr);gap:calc(var(--u)*.8);width:calc(var(--u)*25)}
+.dots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--dim)}
+.dots i.on{background:var(--ochre)}
+.dots i.part{background:linear-gradient(90deg,var(--ochre) 80%,var(--dim) 80%)}
+.slide.active .dots i{animation:fade .4s calc(var(--k) * .012s) backwards}
+.slide.active .dots i.on,.slide.active .dots i.part{animation:dotin .5s calc(1s + var(--k) * .08s) backwards}
+.dotbox .note{max-width:calc(var(--u)*25)}
+
+/* 5 solidão */
+.people{display:flex;gap:calc(var(--u)*1.1)}
+.people svg{width:calc(var(--u)*4.6);height:calc(var(--u)*6.2);color:rgba(255,255,255,.24)}
+.people svg.hit{color:var(--ochre);filter:drop-shadow(0 0 calc(var(--u)*1) rgba(242,184,75,.5))}
+.slide.active .people svg{animation:rise .5s calc(.5s + var(--k) * .12s) backwards}
+.slide.active .people svg.hit{animation:pop .7s 1.5s cubic-bezier(.3,1.5,.5,1) backwards}
+.ringbox{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*1.2);flex:none}
+.ring{position:relative;width:calc(var(--u)*27);aspect-ratio:1}
+.ring i{position:absolute;left:50%;top:50%;width:calc(var(--u)*.35);height:calc(var(--u)*1.7);margin:calc(var(--u)*-.85) 0 0 calc(var(--u)*-.175);border-radius:calc(var(--u)*1);background:var(--ochre);transform:rotate(calc(var(--k) * 3.6deg)) translateY(calc(var(--u) * -11.8))}
+.slide.active .ring i{animation:tickon .3s calc(.9s + var(--k) * .04s) backwards}
+.ringc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*.3);text-align:center}
+.ringc .big{font-size:calc(var(--u)*7.4)}
+.ringc span{font-size:calc(var(--u)*1.5);color:var(--muted);letter-spacing:.04em}
+.ringbox .lab{text-align:center;max-width:calc(var(--u)*30)}
+.ringbox .lab b{font-family:var(--display);font-weight:400;font-size:calc(var(--u)*2.8);color:var(--ochre)}
+
+/* 6 hipóteses */
+.li{display:flex;gap:calc(var(--u)*1.2);align-items:flex-start;font-size:calc(var(--u)*1.5);line-height:1.4;color:var(--ink)}
+.li+.li{margin-top:calc(var(--u)*.8)}
+.bd{flex:none;min-width:calc(var(--u)*3.2);height:calc(var(--u)*2.4);padding:0 calc(var(--u)*.7);border-radius:calc(var(--u)*.5);border:1px solid rgba(242,184,75,.55);color:var(--ochre);font-size:calc(var(--u)*1.25);font-weight:700;display:inline-grid;place-items:center;letter-spacing:.06em}
+.li svg{flex:none;width:calc(var(--u)*2.4);height:calc(var(--u)*2.4);color:var(--sage)}
+.panel h3 .st{font-size:calc(var(--u)*1.2);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-left:calc(var(--u)*1)}
+.limit{display:flex;gap:calc(var(--u)*1.2);align-items:center;font-size:calc(var(--u)*1.5);line-height:1.4;color:var(--ink);border-left:calc(var(--u)*.3) solid var(--clay);padding:calc(var(--u)*.4) 0 calc(var(--u)*.4) calc(var(--u)*1.6)}
+
+/* 7 mapa */
+.mapwrap{display:flex;align-items:center;gap:calc(var(--u)*4)}
+.plotbox{display:flex;gap:calc(var(--u)*1);flex:none}
+.yl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:calc(var(--u)*1.2);letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--muted);text-align:center}
+.xl{font-size:calc(var(--u)*1.2);letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--muted);text-align:center;margin-top:calc(var(--u)*1)}
+.plot{position:relative;width:calc(var(--u)*40);height:calc(var(--u)*21);border:1px solid var(--line);border-radius:calc(var(--u)*.8);overflow:hidden}
+.q{position:absolute;width:50%;height:50%;background:rgba(255,255,255,.03);font-size:calc(var(--u)*1.05);letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:rgba(168,191,188,.6);padding:calc(var(--u)*.8) calc(var(--u)*1)}
+.q.tl{left:0;top:0}.q.tr{left:50%;top:0;background:rgba(242,184,75,.075);text-align:right}.q.bl{left:0;top:50%;display:flex;align-items:flex-end}.q.br{left:50%;top:50%;display:flex;align-items:flex-end;justify-content:flex-end;text-align:right}
+.plot::before,.plot::after{content:"";position:absolute;background:var(--line);z-index:1}
+.plot::before{left:50%;top:0;bottom:0;width:1px}.plot::after{top:50%;left:0;right:0;height:1px}
+.sk{position:absolute;z-index:2;width:calc(var(--u)*3);height:calc(var(--u)*3);margin:calc(var(--u)*-1.5) 0 0 calc(var(--u)*-1.5);border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:calc(var(--u)*1.35);background:var(--sage);color:#0b2427}
+.sk.pt{background:var(--ochre)}
+.sk.pt::after{content:"";position:absolute;inset:0;border-radius:50%;border:calc(var(--u)*.2) solid var(--ochre);animation:ripple 2.6s ease-out infinite;opacity:0}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*.9) calc(var(--u)*2);align-content:center;flex:1;min-width:0}
+.key{display:flex;align-items:center;gap:calc(var(--u)*1.1);font-size:calc(var(--u)*1.45);line-height:1.25;color:var(--ink)}
+.kb{flex:none;width:calc(var(--u)*2.4);height:calc(var(--u)*2.4);border-radius:50%;display:grid;place-items:center;font-size:calc(var(--u)*1.15);font-weight:700;background:var(--sage);color:#0b2427}
+.kb.pt{background:var(--ochre)}
+.keyhead{grid-column:1 / -1;font-size:calc(var(--u)*1.3);color:var(--muted);line-height:1.4;margin-bottom:calc(var(--u)*.2)}
+
+/* 8 parceiros */
+.pc .tag{color:var(--ochre)}
+.pc .top{display:flex;align-items:center;gap:calc(var(--u)*1.4)}
+.pc .ic{width:calc(var(--u)*4.6);height:calc(var(--u)*4.6);flex:none}
+.hdr{align-items:flex-end}
+.pc h3{font-size:calc(var(--u)*2.15)}
+.stat{margin-top:auto;padding-top:calc(var(--u)*.8);display:inline-flex;align-items:center;gap:calc(var(--u)*.9);font-size:calc(var(--u)*1.25);letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--sage)}
+.stat::before{content:"";width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);border-radius:50%;background:var(--sage);flex:none}
+.stat.go{color:var(--ochre)}
+.stat.go::before{background:var(--ochre);animation:pulse 1.8s ease-in-out infinite;box-shadow:0 0 0 0 rgba(242,184,75,.5)}
+.crit{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.8) calc(var(--u)*1);justify-content:flex-end;max-width:calc(var(--u)*44);font-size:calc(var(--u)*1.3);color:var(--muted)}
+.crit .cl{flex-basis:100%;text-align:right;letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-size:calc(var(--u)*1.2)}
+.crit .chip{font-size:calc(var(--u)*1.3);padding:calc(var(--u)*.55) calc(var(--u)*1.2)}
+
+/* 9 casas */
+.homes{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--u)*2)}
+.home{background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--u)*1.4);padding:calc(var(--u)*2.4);display:flex;flex-direction:column;gap:calc(var(--u)*.8);min-width:0}
+.home .hi{width:calc(var(--u)*5);height:calc(var(--u)*5);color:var(--sage)}
+.home .hi path{stroke-dasharray:1;stroke-dashoffset:0}
+.slide.active .home .hi path{animation:scrib 1.4s var(--d,.6s) ease-out backwards}
+.home h3{font-size:calc(var(--u)*2)}
+.home .loc{font-size:calc(var(--u)*1.5);color:var(--muted)}
+.home.more{border-style:dashed;background:transparent}
+.home.more .hi{color:var(--muted)}
+
+/* chips */
+.chip{font-size:calc(var(--u)*2);font-weight:500;padding:calc(var(--u)*1) calc(var(--u)*1.9);border-radius:99px;border:1px solid rgba(242,184,75,.5);background:rgba(242,184,75,.08);color:var(--ink)}
+.chip.alt{border-color:rgba(141,191,168,.55);background:rgba(141,191,168,.09)}
+.chips{display:flex;flex-wrap:wrap;gap:calc(var(--u)*1.2)}
+.chips .chip{font-size:calc(var(--u)*1.5);padding:calc(var(--u)*.7) calc(var(--u)*1.4)}
+
+/* 11 livro sendo escrito */
+.s11 .row{gap:calc(var(--u)*4)}
+.s11 .spread{width:min(100%,calc(var(--u)*48));aspect-ratio:1.42}
+.s11 .pg{padding:calc(var(--u)*3.2) calc(var(--u)*3)}
+.pname{text-align:center;display:flex;flex-direction:column;gap:calc(var(--u)*.2)}
+.pname b{font-family:var(--display);font-weight:400;font-size:calc(var(--u)*2.2)}
+.pname span{font-size:calc(var(--u)*1.3);color:#6b675c}
+.btitle{font-family:var(--display);font-size:calc(var(--u)*2.3);line-height:1.1;color:var(--paper-ink);margin:0;font-weight:400}
+.hand{font-family:var(--hand);font-weight:600;font-size:calc(var(--u)*2.55);line-height:1.22;color:#3a362f;min-height:9.2em}
+.hand.typing::after{content:"";display:inline-block;width:.18em;height:.9em;margin-left:.1em;background:#3a362f;vertical-align:-.1em;animation:blink .7s steps(1) infinite}
+.leaf{position:absolute;inset:0;background:linear-gradient(90deg,#d4cfc1,#ebe7dc 40%);transform-origin:left center;opacity:0;border-radius:0 calc(var(--u)*.8) calc(var(--u)*.8) 0;z-index:3;pointer-events:none}
+.leaf.go{animation:flip .95s ease-in-out forwards}
+.s11 .spread .pg.r{overflow:visible;perspective:calc(var(--u)*120)}
+.counter{font-size:calc(var(--u)*1.7);color:var(--muted)}
+.counter b{color:var(--ochre);font-size:calc(var(--u)*3.2);font-family:var(--display);font-weight:400;margin:0 calc(var(--u)*.3)}
+.ticks{display:grid;grid-template-columns:repeat(20,1fr);gap:calc(var(--u)*.4);margin-top:calc(var(--u)*.6);max-width:calc(var(--u)*34)}
+.ticks i{height:calc(var(--u)*1.6);border-radius:calc(var(--u)*.3);background:var(--dim);transition:background .5s}
+.ticks i.on{background:var(--ochre)}
+.fict{font-size:calc(var(--u)*1.3);color:var(--muted);line-height:1.4;max-width:calc(var(--u)*34)}
+
+/* 12 cronograma */
+.gantt{display:flex;flex-direction:column;gap:calc(var(--u)*1);width:100%}
+.gr{display:flex;align-items:center;gap:calc(var(--u)*1.6)}
+.gl{flex:none;width:calc(var(--u)*23);font-size:calc(var(--u)*1.55);font-weight:500;line-height:1.2}
+.gt{position:relative;flex:1;min-width:0;height:calc(var(--u)*3.6);border-radius:calc(var(--u)*.6);background:repeating-linear-gradient(to right,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) calc(100% / 12 - calc(var(--u)*.1)),rgba(255,255,255,.15) calc(100% / 12 - calc(var(--u)*.1)),rgba(255,255,255,.15) calc(100% / 12))}
+.gh .gt{background:none;height:auto}
+.wk{display:grid;grid-template-columns:repeat(12,1fr);font-size:calc(var(--u)*1.2);color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.gh .gl{font-size:calc(var(--u)*1.2);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.gbody{position:relative;display:flex;flex-direction:column;gap:calc(var(--u)*1)}
+.gb{position:absolute;top:calc(var(--u)*.5);bottom:calc(var(--u)*.5);left:calc((var(--s) - 1) / 12 * 100%);width:calc((var(--e) - var(--s) + 1) / 12 * 100%);border-radius:calc(var(--u)*.5);background:var(--c);transform-origin:left;display:flex;align-items:center;padding-left:calc(var(--u)*1);font-size:calc(var(--u)*1.2);font-weight:700;color:#0b2427;white-space:nowrap;overflow:hidden}
+.slide.active .gb{animation:grow .9s calc(.5s + var(--r) * .45s) cubic-bezier(.3,.9,.3,1) backwards}
+.ph{position:absolute;top:calc(var(--u)*-.4);bottom:calc(var(--u)*-.4);left:calc(var(--u)*24.6);right:0;pointer-events:none}
+.ph i{position:absolute;top:0;bottom:0;left:0;width:calc(var(--u)*.25);margin-left:calc(var(--u)*-.12);background:var(--ochre);box-shadow:0 0 calc(var(--u)*1.6) var(--ochre);opacity:0}
+.slide.active .ph i{animation:sweep 6s .3s linear backwards}
+
+/* 13 riscos */
+.rk{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--u)*2)}
+.rc{background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--u)*1.4);padding:calc(var(--u)*2) calc(var(--u)*2.2);display:flex;flex-direction:column;gap:calc(var(--u)*.7);min-width:0}
+.rc .tag.r{color:var(--clay)}
+.rc h3{font-size:calc(var(--u)*1.9);min-height:calc(var(--u)*4.6)}
+.rc p{font-size:calc(var(--u)*1.5);line-height:1.42;color:var(--muted)}
+.rc .ar{display:block;height:calc(var(--u)*.25);border-radius:calc(var(--u)*1);background:linear-gradient(90deg,var(--clay),var(--sage));transform-origin:left;margin:calc(var(--u)*.5) 0}
+.slide.active .rc .ar{animation:grow .8s var(--d,1s) ease-out backwards}
+
+/* 14 situação */
+.track{position:relative;display:grid;grid-template-columns:1fr 1fr 1.45fr;gap:calc(var(--u)*3)}
+.track::before{content:"";position:absolute;left:calc(var(--u)*2.6);right:calc(var(--u)*2.6);top:calc(var(--u)*2.6);height:calc(var(--u)*.3);background:var(--line)}
+.track::after{content:"";position:absolute;left:calc(var(--u)*2.6);width:calc((100% - calc(var(--u)*5.2)) * .52);top:calc(var(--u)*2.6);height:calc(var(--u)*.3);background:var(--sage);transform-origin:left}
+.slide.active .track::after{animation:grow 1.8s .5s ease-in-out backwards}
+.tk{position:relative;z-index:1;display:flex;flex-direction:column;gap:calc(var(--u)*1);min-width:0}
+.nd{width:calc(var(--u)*5.2);height:calc(var(--u)*5.2);border-radius:50%;display:grid;place-items:center;background:var(--stage-2);border:calc(var(--u)*.3) solid var(--sage);color:var(--sage)}
+.nd svg{width:calc(var(--u)*2.6);height:calc(var(--u)*2.6)}
+.nd.now{border-color:var(--ochre);color:var(--ochre);animation:pulse 1.8s ease-in-out infinite;box-shadow:0 0 0 0 rgba(242,184,75,.5)}
+.nd.nx{border-color:rgba(255,255,255,.3);border-style:dashed;color:var(--muted)}
+.nd.done{background:var(--sage);color:#0b2427}
+.tk h3{font-size:calc(var(--u)*2.3);margin-top:calc(var(--u)*.4)}
+.tk p{font-size:calc(var(--u)*1.75);line-height:1.42;color:var(--muted)}
+.todo{display:grid;gap:calc(var(--u)*.7);margin-top:calc(var(--u)*.2)}
+.todo span{display:flex;gap:calc(var(--u)*1);align-items:baseline;font-size:calc(var(--u)*1.65);line-height:1.35;color:var(--ink)}
+.todo span::before{content:"";flex:none;width:calc(var(--u)*.9);height:calc(var(--u)*.9);border:calc(var(--u)*.2) solid var(--muted);border-radius:calc(var(--u)*.2);transform:translateY(calc(var(--u)*.05))}
+
+/* 15 final e 16 perguntas */
+.cover{position:relative;flex:none;width:calc(var(--u)*22);aspect-ratio:3/4;border-radius:calc(var(--u)*.8) calc(var(--u)*1.6) calc(var(--u)*1.6) calc(var(--u)*.8);background:linear-gradient(135deg,#1f4a50,#12353a);border:1px solid rgba(242,184,75,.55);padding:calc(var(--u)*3) calc(var(--u)*2.6);display:flex;flex-direction:column;justify-content:space-between;box-shadow:calc(var(--u)*1.2) calc(var(--u)*1.2) 0 calc(var(--u)*-.2) #0a2023,0 calc(var(--u)*3) calc(var(--u)*6) rgba(0,0,0,.45)}
+.cover b{font-family:var(--display);font-weight:400;font-size:calc(var(--u)*4);line-height:1;color:var(--ochre)}
+.cover small{font-size:calc(var(--u)*1.4);line-height:1.4;color:var(--ink);opacity:.85}
+.slide.active .cover{animation:bob 2.4s ease-in-out infinite alternate}
+.trio{display:flex;flex-wrap:wrap;gap:calc(var(--u)*1.4)}
+.trio span{font-size:calc(var(--u)*1.8);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ochre)}
+.trio span+span::before{content:"·";margin-right:calc(var(--u)*1.4);color:var(--muted)}
+.srcs{display:grid;gap:calc(var(--u)*.9);font-size:calc(var(--u)*1.4);line-height:1.4;color:var(--muted);max-width:calc(var(--u)*56)}
+.srcs a{color:var(--ink);text-underline-offset:calc(var(--u)*.3)}
+.srcs b{color:var(--ochre);font-weight:700}
+
+/* ---------- controles ---------- */
+.ctrl{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto 0;max-width:min(1200px,max(560px,calc((100vh - 130px) * 16 / 9)))}
+.ctrl button{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.05);display:grid;place-items:center;cursor:pointer}
+.ctrl button:hover{background:rgba(255,255,255,.12)}
+.ctrl button:focus-visible,.seg:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+.ctrl svg{width:20px;height:20px}
+.ctrl #cc{font-size:12px;font-weight:700;letter-spacing:.04em}
+.ctrl #cc[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
+.segs{flex:1;display:flex;gap:3px;min-width:0}
+.ctrl button.seg{flex:1;width:auto;min-width:0;height:44px;padding:0;border:0;border-radius:0;background:transparent;cursor:pointer;display:flex;align-items:center;place-items:unset;position:relative}
+.ctrl button.seg:hover{background:transparent}
+.seg span{display:block;height:4px;width:0;background:var(--ochre);border-radius:4px;position:relative;z-index:1}
+.seg::after{content:"";position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;background:rgba(255,255,255,.16);border-radius:4px;z-index:0}
+.seg.chs::before{content:"";position:absolute;left:-2px;top:12px;bottom:12px;width:1px;background:rgba(255,255,255,.35)}
+.count{flex:none;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:96px;text-align:right;line-height:1.25}
+
+/* ---------- celular ---------- */
+@media (max-width:720px){
+  .stage{aspect-ratio:9/17.5;max-width:none}
+  .brand{display:none}
+  .chap{--u:2.35cqw;font-size:calc(var(--u)*1.35);gap:calc(var(--u)*1.4);top:calc(var(--u)*2.6);left:calc(var(--u)*5.5);right:auto}
+  .amb{--u:2.35cqw}
+  .slide{--u:2.35cqw;padding:calc(var(--u)*7.5) calc(var(--u)*5.5) calc(var(--u)*15.5);gap:calc(var(--u)*2)}
+  .slide .eyebrow{display:none}
+  .s1 .eyebrow,.s15 .eyebrow{display:block}
+  h1{font-size:calc(var(--u)*8)}
+  h2{font-size:calc(var(--u)*4.2)}
+  .lead{font-size:calc(var(--u)*2.3)}
+  .sub{font-size:calc(var(--u)*2)}
+  .cap{font-size:calc(var(--u)*1.75);padding:calc(var(--u)*4) calc(var(--u)*5) calc(var(--u)*2.2)}
+  .row{flex-direction:column;align-items:flex-start;gap:calc(var(--u)*3)}
+  .duo{grid-template-columns:1fr;gap:calc(var(--u)*1.6)}
+  .spread{width:100%;aspect-ratio:1.2}
+  .s1 .spread{width:76%}
+  .s1 .row{justify-content:center}
+  .road{max-width:none;gap:calc(var(--u)*.8) calc(var(--u)*1.6)}
+  .road span{font-size:calc(var(--u)*1.65)}
+  .shelf{height:calc(var(--u)*11)}
+  .quote{font-size:calc(var(--u)*1.8)}
+  .panel,.card{padding:calc(var(--u)*1.8) calc(var(--u)*2.2)}
+  .panel p,.card p{font-size:calc(var(--u)*1.8)}
+  .viz,.s3 .tag{display:none}
+  .s3 h2{font-size:calc(var(--u)*3.8)}
+  .s3 .panel p{font-size:calc(var(--u)*1.65)}
+  .three{grid-template-columns:1fr;gap:calc(var(--u)*1.6)}
+  .card{flex-direction:row;flex-wrap:wrap;align-items:center;gap:calc(var(--u)*.4) calc(var(--u)*2)}
+  .card .ic{width:calc(var(--u)*5.2);height:calc(var(--u)*5.2)}
+  .card .tt{flex:1;min-width:0}
+  .s10 .card p{display:none}
+  .s4 .row{gap:calc(var(--u)*2.4);align-items:center}
+  .big{font-size:calc(var(--u)*9)}
+  .big small{font-size:calc(var(--u)*2.6)}
+  .mid{font-size:calc(var(--u)*5)}
+  .lab{font-size:calc(var(--u)*1.8);max-width:none}
+  .dots{width:calc(var(--u)*28);gap:calc(var(--u)*.6)}
+  .s4 h2,.s5 h2,.s6 h2,.s13 h2{display:none}
+  .dotbox{align-items:center}
+  .s5 .row{gap:calc(var(--u)*2);align-items:center}
+  .people{justify-content:flex-start}
+  .ring{width:calc(var(--u)*24)}
+  .ring i{transform:rotate(calc(var(--k) * 3.6deg)) translateY(calc(var(--u) * -10.3))}
+  .ringc .big{font-size:calc(var(--u)*6.4)}
+  .s5 .note.dk{display:none}
+  .s5 .note.mb{display:block}
+  .ringbox .lab b{font-size:calc(var(--u)*2.6)}
+  .li{font-size:calc(var(--u)*1.7)}
+  .limit{font-size:calc(var(--u)*1.65)}
+  .s6 .panel.lr{display:none}
+  .mapwrap{flex-direction:column;align-items:center;gap:calc(var(--u)*1.6)}
+  .plot{width:calc(var(--u)*28);height:calc(var(--u)*22)}
+  .q{font-size:calc(var(--u)*.95);padding:calc(var(--u)*.5) calc(var(--u)*.6)}
+  .keys{gap:calc(var(--u)*.8) calc(var(--u)*1.2);width:100%;flex:none}
+  .key{font-size:calc(var(--u)*1.4)}
+  .kb{width:calc(var(--u)*2.2);height:calc(var(--u)*2.2)}
+  .keyhead{font-size:calc(var(--u)*1.3)}
+  .s7 .col{display:none}
+  .pc p{display:none}
+  .pc .top{flex:1;min-width:0}
+  .pc .stat{flex-basis:100%;margin:0;padding:0}
+  .crit{justify-content:flex-start;max-width:none}
+  .crit .cl{text-align:left}
+  .hdr{align-items:flex-start;gap:calc(var(--u)*1.6)}
+  .homes{grid-template-columns:1fr 1fr;gap:calc(var(--u)*1.4)}
+  .home{padding:calc(var(--u)*1.6);gap:calc(var(--u)*.5)}
+  .home .hi{display:none}
+  .home h3{font-size:calc(var(--u)*1.9)}
+  .home .loc{font-size:calc(var(--u)*1.5)}
+  .note{font-size:calc(var(--u)*1.35)}
+  .s11 .row{gap:calc(var(--u)*1.4)}
+  .s11 .col{gap:calc(var(--u)*1)}
+  .s11 h2{display:none}
+  .s11 .spread{width:100%;aspect-ratio:.92;grid-template-columns:.8fr 1.2fr}
+  .s11 .pg{padding:calc(var(--u)*2) calc(var(--u)*1.8)}
+  .s11 .pg.l{gap:calc(var(--u)*1)}
+  .portrait{width:78%}
+  .hand{font-size:calc(var(--u)*2.35);min-height:8.4em}
+  .btitle{font-size:calc(var(--u)*2.3)}
+  .pname b{font-size:calc(var(--u)*2)}
+  .pname span{font-size:calc(var(--u)*1.2)}
+  .counter{font-size:calc(var(--u)*1.9)}
+  .fict{max-width:none;font-size:calc(var(--u)*1.4)}
+  .s12 h2{font-size:calc(var(--u)*3.6)}
+  .s12 .note{display:none}
+  .gantt{gap:calc(var(--u)*.8)}
+  .gbody{gap:calc(var(--u)*.8)}
+  .gr{flex-direction:column;align-items:stretch;gap:calc(var(--u)*.4)}
+  .gl{width:auto;font-size:calc(var(--u)*1.6)}
+  .gh .gl{display:none}
+  .ph{left:0}
+  .gt{height:calc(var(--u)*3.2);flex:none}
+  .gb{font-size:calc(var(--u)*1.2)}
+  .wk{font-size:calc(var(--u)*1.2)}
+  .rk{grid-template-columns:1fr;gap:calc(var(--u)*1.2)}
+  .rc{padding:calc(var(--u)*1.4) calc(var(--u)*2);gap:calc(var(--u)*.4)}
+  .rc .tag,.rc .ar{display:none}
+  .rc p{font-size:calc(var(--u)*1.55)}
+  .rc h3{font-size:calc(var(--u)*1.95);min-height:0}
+  .track{grid-template-columns:1fr;gap:calc(var(--u)*1.6)}
+  .track::before,.track::after{left:calc(var(--u)*2.6);right:auto;top:calc(var(--u)*2.6);bottom:calc(var(--u)*2.6);width:calc(var(--u)*.3);height:auto}
+  .track::after{height:36%;bottom:auto}
+  .tk{display:grid;grid-template-columns:calc(var(--u)*5.2) 1fr;column-gap:calc(var(--u)*2);align-items:start}
+  .tk .nd{grid-row:1 / span 3}
+  .tk h3{margin:0;font-size:calc(var(--u)*2)}
+  .tk p,.todo span{font-size:calc(var(--u)*1.65)}
+  .cover{display:none}
+  .trio{gap:calc(var(--u)*1) calc(var(--u)*1.4)}
+  .trio span{font-size:calc(var(--u)*1.7);letter-spacing:.1em}
+  .srcs{font-size:calc(var(--u)*1.5)}
+  .s16 h1{font-size:calc(var(--u)*6.2)}
+  .count{min-width:0;flex:1}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<div class="app" id="app">
+  <div class="stage" id="stage">
+    <div class="amb" id="amb" aria-hidden="true"></div>
+    <div class="brand"><i></i>Museu de Vidas</div>
+    <div class="chap" id="chap" aria-hidden="true">
+      <span><b>01</b><i>O problema</i></span>
+      <span><b>02</b><i>A evidência</i></span>
+      <span><b>03</b><i>Os stakeholders</i></span>
+      <span><b>04</b><i>Os parceiros</i></span>
+      <span><b>05</b><i>O plano</i></span>
+    </div>
+
+    <!-- 1 abertura -->
+    <section class="slide s1 active" data-dur="15000" data-ch="0" aria-label="Abertura">
+      <div class="row">
+        <div class="col">
+          <p class="eyebrow a" style="--d:.1s">Projeto de escuta e memória</p>
+          <h1 class="a" style="--d:.25s">Museu<br>de Vidas</h1>
+          <p class="lead a" style="--d:.45s">Histórias que não podem ser esquecidas.</p>
+          <div class="road">
+            <span class="p" style="--d:1s"><b>01</b>O problema</span>
+            <span class="p" style="--d:1.25s"><b>02</b>A evidência</span>
+            <span class="p" style="--d:1.5s"><b>03</b>Os stakeholders</span>
+            <span class="p" style="--d:1.75s"><b>04</b>Os parceiros</span>
+            <span class="p" style="--d:2s"><b>05</b>O plano</span>
+          </div>
+        </div>
+        <div class="spread" aria-hidden="true">
+          <div class="ribbon"></div>
+          <div class="pg l">
+            <div class="portrait"><svg viewBox="0 0 100 125"><circle cx="50" cy="48" r="17" class="sh"/><path d="M16 125c0-27 15-42 34-42s34 15 34 42z" class="sh"/></svg></div>
+            <div class="bars dark w62"><i style="--w:100%;--d:1.2s"></i><i style="--w:70%;--d:1.4s"></i></div>
+            <span class="pno">3</span>
+          </div>
+          <div class="pg r">
+            <div class="bars dark w55"><i class="title" style="--w:100%;--d:1.1s"></i></div>
+            <div class="bars">
+              <i style="--w:100%;--d:1.5s"></i><i style="--w:94%;--d:1.7s"></i><i style="--w:100%;--d:1.9s"></i><i style="--w:88%;--d:2.1s"></i><i style="--w:100%;--d:2.3s"></i><i style="--w:72%;--d:2.5s"></i><i style="--w:100%;--d:2.8s"></i><i style="--w:96%;--d:3s"></i><i style="--w:46%;--d:3.2s"></i>
+            </div>
+            <span class="pno">4</span>
+          </div>
+        </div>
+      </div>
+      <p class="cap">Apresentamos o Museu de Vidas em cinco partes: o problema, a evidência, quem importa, quem pode ajudar e o plano.</p>
+    </section>
+
+    <!-- 2 estante -->
+    <section class="slide s2" data-dur="25000" data-ch="1" aria-label="Por que importa">
+      <div class="shelf" aria-hidden="true">
+        <i style="--h:78%;--c:#c9704f;--n:0"></i><i style="--h:100%;--c:#5f8f98;--n:1"></i><i style="--h:68%;--c:#e0a93e;--n:2"></i><i style="--h:90%;--c:#8dbfa8;--n:3"></i><i style="--h:74%;--c:#b9a1c9;--n:4"></i><i style="--h:96%;--c:#d98e73;--n:5"></i><i style="--h:64%;--c:#6f8fc0;--n:6"></i><i style="--h:84%;--c:#e0a93e;--n:7"></i><i style="--h:100%;--c:#8dbfa8;--n:8"></i><i style="--h:72%;--c:#c9704f;--n:9"></i><i style="--h:88%;--c:#5f8f98;--n:10"></i><i style="--h:70%;--c:#b9a1c9;--n:11"></i><i style="--h:94%;--c:#d98e73;--n:12"></i><i style="--h:80%;--c:#e0a93e;--n:13"></i>
+      </div>
+      <p class="eyebrow a" style="--d:2.4s">Por que importa</p>
+      <h2 class="a" style="--d:2.6s">Cada pessoa idosa é uma<br>biblioteca inteira.</h2>
+      <p class="quote a" style="--d:3.2s"><b>“Quando morre um velho, é uma biblioteca que queima.”</b> Frase atribuída ao escritor malinês Amadou Hampâté Bâ.</p>
+      <p class="cap">Cada pessoa idosa guarda uma biblioteca de histórias. Quando ninguém escuta, ela se perde.</p>
+    </section>
+
+    <!-- 3 duas perdas -->
+    <section class="slide s3" data-dur="30000" data-ch="1" aria-label="O problema">
+      <div class="col">
+        <p class="eyebrow a">A pergunta do projeto</p>
+        <h2 class="a" style="--d:.15s">O problema tem duas partes ligadas.</h2>
+      </div>
+      <div class="duo">
+        <div class="panel a" style="--d:.6s">
+          <span class="tag">Primeira parte</span>
+          <h3>Memórias que se perdem</h3>
+          <div class="viz lines" aria-hidden="true">
+            <i style="--w:92%;--n:0"></i><i style="--w:70%;--n:1"></i><i style="--w:84%;--n:2"></i><i style="--w:56%;--n:3"></i>
+          </div>
+          <p>Muitos idosos em casas de longa permanência quase nunca são convidados a contar a própria história. Quando a pessoa morre, a memória vai junto.</p>
+        </div>
+        <div class="panel a" style="--d:1.1s">
+          <span class="tag">Segunda parte</span>
+          <h3>Gerações que quase não se encontram</h3>
+          <div class="viz" aria-hidden="true">
+            <svg viewBox="0 0 200 64" preserveAspectRatio="xMidYMid meet">
+              <g fill="#f2b84b"><circle cx="34" cy="20" r="9"/><path d="M14 62c0-16 8-26 20-26s20 10 20 26z"/></g>
+              <g fill="#8dbfa8"><circle cx="166" cy="20" r="9"/><path d="M146 62c0-16 8-26 20-26s20 10 20 26z"/></g>
+              <path d="M66 36h68" stroke="#a8bfbc" stroke-width="1.6" stroke-dasharray="3 5" stroke-linecap="round"/>
+              <circle class="mover" cx="70" cy="36" r="3.6" fill="#f2eee5"/>
+            </svg>
+          </div>
+          <p>Jovens e idosos convivem pouco, e a troca de experiências entre as gerações diminui.</p>
+        </div>
+      </div>
+      <p class="cap">O problema tem duas partes: memórias que se perdem e gerações que quase não se encontram.</p>
+    </section>
+
+    <!-- 4 censo -->
+    <section class="slide s4" data-dur="30000" data-ch="2" aria-label="Evidência: Censo 2022">
+      <div class="row">
+        <div class="col">
+          <p class="eyebrow a">Evidência 1 · Censo 2022</p>
+          <h2 class="a" style="--d:.15s">Um grupo grande, e que continua crescendo.</h2>
+          <p class="big a" style="--d:.5s"><b data-to="32.1" data-dec="1" data-dur="2200" data-delay="700" style="font-weight:400">32,1</b><small>milhões</small></p>
+          <p class="lab a" style="--d:.7s">de brasileiros têm 60 anos ou mais.</p>
+          <p class="mid a" style="--d:1s"><b data-to="15.8" data-dec="1" data-dur="2200" data-delay="900" style="font-weight:400">15,8</b>%</p>
+          <p class="lab a" style="--d:1.2s">da população do país.</p>
+        </div>
+        <div class="dotbox">
+          <div class="dots" id="dots" aria-hidden="true"></div>
+          <p class="note f" style="--d:2.4s">Cada ponto é 1% da população. Cerca de 16 em cada 100 brasileiros têm 60 anos ou mais.</p>
+          <p class="note f" style="--d:2.6s">Fonte: IBGE, Censo 2022.</p>
+        </div>
+      </div>
+      <p class="cap">Segundo o Censo 2022, mais de 32 milhões de brasileiros têm 60 anos ou mais, cerca de 16 em cada 100.</p>
+    </section>
+
+    <!-- 5 solidão -->
+    <section class="slide s5" data-dur="30000" data-ch="2" aria-label="Evidência: solidão">
+      <div class="row">
+        <div class="col">
+          <p class="eyebrow a">Evidência 2 · Organização Mundial da Saúde</p>
+          <h2 class="a" style="--d:.15s">A solidão também é uma questão de saúde.</h2>
+          <div class="people" id="people" aria-hidden="true"></div>
+          <p class="lab a" style="--d:.5s"><em>Uma em cada seis pessoas</em> no mundo é afetada pela solidão.</p>
+          <p class="note dk f" style="--d:2s">Dado mundial, para todas as idades, não só para idosos. A mesma comissão aponta que a conexão social melhora a saúde e reduz o risco de morte precoce. Fonte: Comissão sobre Conexão Social da OMS, 2025.</p>
+          <p class="note mb f" style="--d:2s">Dado mundial, para todas as idades. Fonte: OMS, 2025.</p>
+        </div>
+        <div class="ringbox">
+          <div class="ring" id="ring" aria-hidden="true">
+            <div class="ringc"><p class="big"><b data-to="100" data-dec="0" data-dur="3900" data-delay="900" style="font-weight:400">100</b></p><span>mortes por hora</span></div>
+          </div>
+          <p class="lab f" style="--d:1.6s"><b data-to="871" data-dec="0" data-dur="3000" data-delay="1000">871</b> <b>mil</b> mortes por ano associadas à solidão</p>
+        </div>
+      </div>
+      <p class="cap">A OMS estima que uma em cada seis pessoas sofre com a solidão, ligada a cerca de 100 mortes por hora.</p>
+    </section>
+
+    <!-- 6 hipóteses e aprendizados -->
+    <section class="slide s6" data-dur="30000" data-ch="2" aria-label="Hipóteses e aprendizados">
+      <div class="col">
+        <p class="eyebrow a">O que descobrimos até aqui</p>
+        <h2 class="a" style="--d:.15s">Hipóteses para validar, e o que já aprendemos.</h2>
+      </div>
+      <div class="duo">
+        <div class="panel a" style="--d:.5s">
+          <h3>Hipóteses iniciais<span class="st">a validar</span></h3>
+          <div>
+            <div class="li"><span class="bd">H1</span>Idosos gostam de contar a própria história.</div>
+            <div class="li"><span class="bd">H2</span>As casas aceitam se o projeto não sobrecarregar a equipe.</div>
+            <div class="li"><span class="bd">H3</span>As bibliotecas se interessam pela memória local.</div>
+            <div class="li"><span class="bd">H4</span>Um livro de 20 páginas cabe em poucos recursos.</div>
+          </div>
+        </div>
+        <div class="panel lr a" style="--d:1s">
+          <h3>Primeiros aprendizados</h3>
+          <div>
+            <div class="li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Contatar muitas casas ao mesmo tempo: a resposta depende de cada direção.</div>
+            <div class="li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Uma apresentação curta, que já explica os cuidados, ajuda.</div>
+            <div class="li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Contatos de guias na internet precisam de confirmação.</div>
+          </div>
+        </div>
+      </div>
+      <p class="limit f" style="--d:2s">Limite: não achamos levantamento sobre histórias de idosos de BH já registradas. Nossa evidência é indireta.</p>
+      <p class="cap">Nossas hipóteses ainda precisam ser validadas, e a evidência sobre histórias de idosos em BH é indireta.</p>
+    </section>
+
+    <!-- 7 mapa de stakeholders -->
+    <section class="slide s7" data-dur="38000" data-ch="3" aria-label="Mapa de stakeholders">
+      <div class="col">
+        <p class="eyebrow a">Mapa de stakeholders</p>
+        <h2 class="a" style="--d:.15s">Quem decide e quem se importa.</h2>
+      </div>
+      <div class="mapwrap">
+        <div class="plotbox">
+          <div class="yl f" style="--d:.3s">Poder de decisão →</div>
+          <div>
+            <div class="plot" aria-hidden="true">
+              <div class="q tl f" style="--d:.4s">Manter satisfeitos</div>
+              <div class="q tr f" style="--d:.4s">Gerenciar de perto</div>
+              <div class="q bl f" style="--d:.4s">Monitorar</div>
+              <div class="q br f" style="--d:.4s">Envolver e informar</div>
+              <span class="sk pt p" style="left:72%;top:22%;--d:.9s">1</span>
+              <span class="sk p" style="left:90%;top:32%;--d:1.4s">2</span>
+              <span class="sk p" style="left:92%;top:54%;--d:1.9s">3</span>
+              <span class="sk p" style="left:68%;top:46%;--d:2.4s">4</span>
+              <span class="sk pt p" style="left:55%;top:36%;--d:2.9s">5</span>
+              <span class="sk pt p" style="left:30%;top:24%;--d:3.4s">6</span>
+              <span class="sk p" style="left:20%;top:40%;--d:3.9s">7</span>
+              <span class="sk p" style="left:14%;top:72%;--d:4.4s">8</span>
+              <span class="sk p" style="left:62%;top:72%;--d:4.9s">9</span>
+            </div>
+            <div class="xl f" style="--d:.3s">Interesse no projeto →</div>
+          </div>
+        </div>
+        <div class="keys">
+          <p class="keyhead f" style="--d:.6s">Em dourado, os parceiros prioritários. As posições são avaliação do grupo.</p>
+          <div class="key a" style="--d:.9s"><span class="kb pt">1</span>Direção e equipe das casas</div>
+          <div class="key a" style="--d:1.4s"><span class="kb">2</span>Estudantes do grupo</div>
+          <div class="key a" style="--d:1.9s"><span class="kb">3</span>Idosos moradores</div>
+          <div class="key a" style="--d:2.4s"><span class="kb">4</span>Famílias e responsáveis</div>
+          <div class="key a" style="--d:2.9s"><span class="kb pt">5</span>Bibliotecas (Fundação de Cultura)</div>
+          <div class="key a" style="--d:3.4s"><span class="kb pt">6</span>Conselho Municipal do Idoso</div>
+          <div class="key a" style="--d:3.9s"><span class="kb">7</span>Escola e orientador</div>
+          <div class="key a" style="--d:4.4s"><span class="kb">8</span>Gráfica e apoiadores</div>
+          <div class="key a" style="--d:4.9s"><span class="kb">9</span>Leitores em geral</div>
+        </div>
+      </div>
+      <p class="cap">No mapa de poder e interesse, as casas e os próprios idosos são os atores mais decisivos para o projeto.</p>
+    </section>
+
+    <!-- 8 três parceiros -->
+    <section class="slide s8" data-dur="38000" data-ch="4" aria-label="Três parceiros prioritários">
+      <div class="row hdr">
+        <div class="col">
+          <p class="eyebrow a">Quem pode ajudar</p>
+          <h2 class="a" style="--d:.15s">Três parceiros prioritários.</h2>
+        </div>
+        <div class="crit f" style="--d:3.2s">
+          <span class="cl">Critérios de escolha</span>
+          <span class="chip">Acesso às histórias</span><span class="chip alt">Alcance do livro</span><span class="chip">Legitimidade</span><span class="chip alt">Facilidade de contato</span>
+        </div>
+      </div>
+      <div class="three">
+        <div class="card pc a" style="--d:.6s">
+          <div class="top"><svg class="ic" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 22 24 7l18 15M11 19v21h26V19M20 40V28h8v12" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+          <div class="tt"><span class="tag">Parceiro 1</span><h3>Casas de idosos</h3></div></div>
+          <p>Dão acesso às histórias e aos moradores. Sem elas, não há projeto.</p>
+          <span class="stat go">Contato em andamento</span>
+        </div>
+        <div class="card pc a" style="--d:1.4s">
+          <div class="top"><svg class="ic" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 38V12a2 2 0 0 1 2-2h12v28H10a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h30V12a2 2 0 0 0-2-2H26v28" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+          <div class="tt"><span class="tag">Parceiro 2</span><h3>Bibliotecas públicas de BH</h3></div></div>
+          <p>22 unidades e cerca de 202 mil livros. O livro chega a vários bairros.</p>
+          <span class="stat">A contatar</span>
+        </div>
+        <div class="card pc a" style="--d:2.2s">
+          <div class="top"><svg class="ic" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6 8 12v11c0 10 7 17 16 20 9-3 16-10 16-20V12z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="m16 24 6 6 11-12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="tt"><span class="tag">Parceiro 3</span><h3>Conselho do Idoso (CMI-BH)</h3></div></div>
+          <p>Dá legitimidade e orientação diante das casas.</p>
+          <span class="stat">A contatar</span>
+        </div>
+      </div>
+      <p class="cap">Três parceiros prioritários: as casas de idosos, as bibliotecas públicas e o Conselho Municipal do Idoso.</p>
+    </section>
+
+    <!-- 9 casas candidatas -->
+    <section class="slide s9" data-dur="18000" data-ch="4" aria-label="Casas candidatas">
+      <div class="col">
+        <p class="eyebrow a">Parceiro 1 em detalhe</p>
+        <h2 class="a" style="--d:.15s">Casas de idosos de BH.</h2>
+      </div>
+      <div class="homes">
+        <div class="home a" style="--d:.5s">
+          <svg class="hi" viewBox="0 0 48 48" aria-hidden="true" style="--d:.9s"><path pathLength="1" d="M6 22 24 7l18 15M11 19v21h26V19M20 40V28h8v12" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+          <h3>Lar de Idosos Maria da Graça</h3>
+          <p class="loc">Bairro Prado</p>
+        </div>
+        <div class="home a" style="--d:.8s">
+          <svg class="hi" viewBox="0 0 48 48" aria-hidden="true" style="--d:1.2s"><path pathLength="1" d="M6 22 24 7l18 15M11 19v21h26V19M20 40V28h8v12" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+          <h3>Lar dos Idosos Nossa Senhora da Saúde</h3>
+          <p class="loc">Bairro São Geraldo</p>
+        </div>
+        <div class="home a" style="--d:1.1s">
+          <svg class="hi" viewBox="0 0 48 48" aria-hidden="true" style="--d:1.5s"><path pathLength="1" d="M6 22 24 7l18 15M11 19v21h26V19M20 40V28h8v12" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+          <h3>Lar dos Idosos São José</h3>
+          <p class="loc">Bairro Olhos d’Água</p>
+        </div>
+        <div class="home more a" style="--d:1.4s">
+          <svg class="hi" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 10v28M10 24h28" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg>
+          <h3>Outras casas da cidade</h3>
+          <p class="loc">A lista cresce conforme as respostas.</p>
+        </div>
+      </div>
+      <p class="note f" style="--d:2.2s">Exemplos de casas identificadas. Estamos em contato com um grande número de casas, e os contatos ainda serão confirmados.</p>
+      <p class="cap">Estamos em contato com muitas casas de BH e buscamos marcar uma visita em uma delas.</p>
+    </section>
+
+    <!-- 10 ouvir, escrever, entregar -->
+    <section class="slide s10" data-dur="25000" data-ch="5" aria-label="A intervenção">
+      <div class="col">
+        <p class="eyebrow a">O plano</p>
+        <h2 class="a" style="--d:.15s">Ouvir, escrever, entregar.</h2>
+      </div>
+      <div class="three">
+        <div class="card a" style="--d:.6s">
+          <svg class="ic" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 10h48a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H30L18 56V46H8a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><g class="bars2" fill="currentColor"><rect x="17" y="20" width="5" height="16" rx="2.5" style="--d:0s"/><rect x="26" y="16" width="5" height="24" rx="2.5" style="--d:.2s"/><rect x="35" y="21" width="5" height="14" rx="2.5" style="--d:.1s"/><rect x="44" y="18" width="5" height="20" rx="2.5" style="--d:.3s"/></g></svg>
+          <div class="tt"><span class="tag">Passo 1</span><h3>Ouvir</h3></div>
+          <p>Conversas de 30 a 40 minutos, em dupla, sobre infância, amores, profissões e momentos históricos.</p>
+        </div>
+        <div class="card a" style="--d:1.1s">
+          <svg class="ic" viewBox="0 0 64 64" aria-hidden="true"><path class="scribble" pathLength="1" d="M6 40C14 16 22 58 30 34S46 22 58 34" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><path d="M8 54h48" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".45"/></svg>
+          <div class="tt"><span class="tag">Passo 2</span><h3>Escrever</h3></div>
+          <p>Cada relato vira texto com as palavras da própria pessoa, que lê e aprova antes de ir para o livro.</p>
+        </div>
+        <div class="card a" style="--d:1.6s">
+          <svg class="ic" viewBox="0 0 64 64" aria-hidden="true"><g class="bookic"><rect x="14" y="8" width="36" height="46" rx="3.5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M22 20h20M22 28h20M22 36h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></g></svg>
+          <div class="tt"><span class="tag">Passo 3</span><h3>Entregar</h3></div>
+          <p>Um livro de cerca de 20 páginas, para cada idoso participante e para as bibliotecas de BH.</p>
+        </div>
+      </div>
+      <p class="cap">O plano é simples: ouvir os moradores, escrever com as palavras deles e entregar o livro.</p>
+    </section>
+
+    <!-- 11 livro sendo escrito -->
+    <section class="slide s11" data-dur="30000" data-ch="5" data-hook="book" aria-label="O livro sendo escrito">
+      <div class="row">
+        <div class="col">
+          <p class="eyebrow a">Do relato ao livro</p>
+          <h2 class="a" style="--d:.15s">O livro vai sendo escrito.</h2>
+          <p class="counter a" style="--d:.4s">Página <b id="cnt">4</b> de 20</p>
+          <div class="ticks a" id="ticks" style="--d:.5s" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p class="fict a" style="--d:.7s">Estrutura: capa, carta de abertura, oito histórias com retrato e relato, linha do tempo e agradecimentos.</p>
+          <p class="fict a" style="--d:.9s">Exemplo ilustrativo: nomes e relatos inventados só para mostrar como o livro vai ficar.</p>
+        </div>
+        <div class="spread a" style="--d:.3s" aria-hidden="true">
+          <div class="pg l">
+            <div class="portrait" id="portrait" style="--tone:#d98e73"><svg viewBox="0 0 100 125"><circle cx="50" cy="48" r="17" class="sh"/><path d="M16 125c0-27 15-42 34-42s34 15 34 42z" class="sh"/></svg></div>
+            <div class="pname"><b id="bkName">Dona Lourdes</b><span id="bkMeta">84 anos · costureira</span></div>
+            <span class="pno" id="pgL">3</span>
+          </div>
+          <div class="pg r">
+            <h4 class="btitle" id="bkTitle">O baile de 1962</h4>
+            <p class="hand" id="bkText">Conheci meu Zé num baile na Praça da Estação. Ele pisou no meu pé e pediu desculpa três vezes. Casamos dois anos depois.</p>
+            <span class="pno" id="pgR">4</span>
+            <div class="leaf" id="leaf"></div>
+          </div>
+        </div>
+      </div>
+      <p class="cap">Cada conversa vira uma história, e o livro de 20 páginas vai sendo preenchido com elas.</p>
+    </section>
+
+    <!-- 12 cronograma -->
+    <section class="slide s12" data-dur="38000" data-ch="5" aria-label="Cronograma">
+      <div class="col">
+        <p class="eyebrow a">Plano de implementação</p>
+        <h2 class="a" style="--d:.15s">Cerca de 12 semanas, da preparação à entrega.</h2>
+      </div>
+      <div class="gantt">
+        <div class="gr gh"><div class="gl">Semanas</div><div class="gt"><div class="wk"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span></div></div></div>
+        <div class="gbody">
+          <div class="gr"><div class="gl">Preparação</div><div class="gt"><span class="gb" style="--s:1;--e:3;--c:var(--ochre);--r:0">Casa, termo, roteiro</span></div></div>
+          <div class="gr"><div class="gl">Visitas e entrevistas</div><div class="gt"><span class="gb" style="--s:3;--e:6;--c:var(--sage);--r:1">Conversas e retratos</span></div></div>
+          <div class="gr"><div class="gl">Escrita e revisão</div><div class="gt"><span class="gb" style="--s:5;--e:9;--c:var(--steel);--r:2">Texto aprovado por cada idoso</span></div></div>
+          <div class="gr"><div class="gl">Diagramação e impressão</div><div class="gt"><span class="gb" style="--s:9;--e:11;--c:var(--clay);--r:3">20 páginas</span></div></div>
+          <div class="gr"><div class="gl">Entrega</div><div class="gt"><span class="gb" style="--s:11;--e:12;--c:var(--ochre);--r:4">Livros</span></div></div>
+          <div class="ph" aria-hidden="true"><i></i></div>
+        </div>
+      </div>
+      <p class="note f" style="--d:3s">Prazo estimado, ajustável conforme as respostas das casas. Entrega: um exemplar para cada idoso participante, exemplares para a casa e doação às bibliotecas de BH.</p>
+      <p class="cap">Em cerca de 12 semanas: da preparação até a entrega dos livros aos idosos e às bibliotecas.</p>
+    </section>
+
+    <!-- 13 riscos -->
+    <section class="slide s13" data-dur="28000" data-ch="5" aria-label="Riscos e cuidados">
+      <div class="col">
+        <p class="eyebrow a">Riscos e responsabilidades</p>
+        <h2 class="a" style="--d:.15s">Riscos que antecipamos e como reduzimos.</h2>
+      </div>
+      <div class="rk">
+        <div class="rc a" style="--d:.5s;--d2:1s">
+          <span class="tag r">Risco</span><h3>Recusa ou demora das casas</h3>
+          <i class="ar" style="--d:1s"></i>
+          <p>Contatar muitas casas ao mesmo tempo, com apresentação clara dos cuidados.</p>
+        </div>
+        <div class="rc a" style="--d:1.2s">
+          <span class="tag r">Risco</span><h3>Consentimento e privacidade</h3>
+          <i class="ar" style="--d:1.7s"></i>
+          <p>Autorização por escrito do idoso ou do responsável. Cada um aprova o próprio texto.</p>
+        </div>
+        <div class="rc a" style="--d:1.9s">
+          <span class="tag r">Risco</span><h3>Memórias difíceis e cansaço</h3>
+          <i class="ar" style="--d:2.4s"></i>
+          <p>Conversas curtas e sem pressa, equipe por perto. A pessoa só conta o que quiser.</p>
+        </div>
+        <div class="rc a" style="--d:2.6s">
+          <span class="tag r">Risco</span><h3>Custo de impressão</h3>
+          <i class="ar" style="--d:3.1s"></i>
+          <p>Tiragem pequena e busca de apoio de uma gráfica.</p>
+        </div>
+      </div>
+      <p class="cap">Antecipamos os principais riscos e já sabemos como reduzi-los, com cuidado e autorização em primeiro lugar.</p>
+    </section>
+
+    <!-- 14 situação e próximos passos -->
+    <section class="slide s14" data-dur="30000" data-ch="5" aria-label="Onde estamos e próximos passos">
+      <div class="col">
+        <p class="eyebrow a">Onde estamos</p>
+        <h2 class="a" style="--d:.15s">O que já fizemos e o que vem a seguir.</h2>
+      </div>
+      <div class="track">
+        <div class="tk a" style="--d:.5s">
+          <span class="nd done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span>
+          <h3>Feito</h3>
+          <p>Pesquisamos casas de idosos de BH e enviamos mensagem para um grande número delas.</p>
+        </div>
+        <div class="tk a" style="--d:1.2s">
+          <span class="nd now"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg></span>
+          <h3>Agora</h3>
+          <p>Buscamos marcar um dia de visita em uma das casas.</p>
+        </div>
+        <div class="tk a" style="--d:1.9s">
+          <span class="nd nx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <h3>Próximos passos</h3>
+          <div class="todo">
+            <span>Finalizar termo de consentimento e roteiro</span>
+            <span>Fazer a primeira visita, como piloto</span>
+            <span>Procurar a Fundação de Cultura e o Conselho do Idoso</span>
+            <span>Orçar a impressão</span>
+          </div>
+        </div>
+      </div>
+      <p class="cap">Já mandamos mensagem para muitas casas. Agora queremos marcar a primeira visita.</p>
+    </section>
+
+    <!-- 15 encerramento -->
+    <section class="slide s15" data-dur="12000" data-ch="0" aria-label="Encerramento">
+      <div class="row">
+        <div class="col">
+          <p class="eyebrow a">Museu de Vidas</p>
+          <h1 class="a" style="--d:.2s">Vamos<br>escutar?</h1>
+          <p class="lead a" style="--d:.5s">Cada história guardada é uma vida que continua.</p>
+          <div class="trio a" style="--d:.8s"><span>Ouvir</span><span>Escrever</span><span>Entregar</span></div>
+        </div>
+        <div class="cover p" style="--d:.5s" aria-hidden="true"><b>Museu<br>de Vidas</b><small>Histórias que não podem ser esquecidas</small></div>
+      </div>
+      <p class="cap">Vamos escutar? Cada história guardada é uma vida que continua.</p>
+    </section>
+
+    <!-- 16 perguntas e fontes -->
+    <section class="slide s16" data-dur="0" data-hold="1" data-ch="0" aria-label="Perguntas e fontes">
+      <div class="col">
+        <p class="eyebrow a">Agradecemos a atenção</p>
+        <h1 class="a" style="--d:.2s">Perguntas?</h1>
+      </div>
+      <div class="srcs f" style="--d:.8s">
+        <p><b>Fontes</b></p>
+        <p>IBGE, Censo 2022, população com 60 anos ou mais: <a href="https://agenciagov.ebc.com.br/noticias/202310/brasileiros-com-60-anos-ou-mais-superam-32-milhoes-de-pessoas-mdhc-reforca-importancia-do-cuidado-e-respeito-com-essa-faixa-etaria" target="_blank" rel="noopener">Agência Gov</a>.</p>
+        <p>OPAS e OMS, relatório da Comissão sobre Conexão Social, 2025: <a href="https://www.paho.org/pt/noticias/30-6-2025-conexao-social-e-associada-melhoria-da-saude-e-reducao-do-risco-morte-prematura" target="_blank" rel="noopener">paho.org</a>.</p>
+        <p>Prefeitura de Belo Horizonte, rede de bibliotecas públicas: <a href="https://prefeitura.pbh.gov.br/noticias/mais-de-dois-mil-livros-sao-integrados-ao-acervo-da-rede-de-bibliotecas-publicas-de-bh" target="_blank" rel="noopener">prefeitura.pbh.gov.br</a>.</p>
+        <p>Prefeitura de Belo Horizonte, Conselho Municipal do Idoso: <a href="https://prefeitura.pbh.gov.br/direitos-humanos/conselhos/idoso" target="_blank" rel="noopener">prefeitura.pbh.gov.br</a>.</p>
+      </div>
+      <p class="cap">Agradecemos a atenção. Vamos às perguntas.</p>
+    </section>
+  </div>
+
+  <div class="ctrl">
+    <button id="prev" aria-label="Slide anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+    <button id="play" aria-label="Pausar avanço automático"><svg id="icPause" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg><svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M8 5v14l11-7z"/></svg></button>
+    <button id="next" aria-label="Próximo slide"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+    <div class="segs" id="segs"></div>
+    <span class="count" id="count">1 / 16</span>
+    <button id="cc" aria-label="Legendas" aria-pressed="true">CC</button>
+    <button id="fs" aria-label="Tela cheia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var app = document.getElementById('app');
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var segs = document.getElementById('segs');
+  var countEl = document.getElementById('count');
+  var playBtn = document.getElementById('play');
+  var icPause = document.getElementById('icPause');
+  var icPlay = document.getElementById('icPlay');
+  var chapSpans = Array.prototype.slice.call(document.querySelectorAll('#chap span'));
+  var idx = 0, elapsed = 0, epoch = 0, playing = !reduced, last = performance.now();
+  function $(id){ return document.getElementById(id); }
+
+  /* tempo total e acumulado */
+  var total = slides.reduce(function(s,el){ return s + (+el.dataset.dur || 0); }, 0);
+  var starts = []; (function(){ var a = 0; slides.forEach(function(el){ starts.push(a); a += (+el.dataset.dur || 0); }); })();
+  function mmss(ms){ var s = Math.round(ms/1000); return Math.floor(s/60) + ':' + ('0' + (s % 60)).slice(-2); }
+
+  /* elementos gerados */
+  var dg = $('dots');
+  for(var i=0;i<100;i++){ var d = document.createElement('i'); d.style.setProperty('--k', i); if(i < 15) d.className = 'on'; else if(i === 15) d.className = 'part'; dg.appendChild(d); }
+  var rg = $('ring'), rc = rg.firstElementChild;
+  for(var j=0;j<100;j++){ var t = document.createElement('i'); t.style.setProperty('--k', j); rg.insertBefore(t, rc); }
+  var pg = $('people');
+  for(var p=0;p<6;p++){
+    pg.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 32" class="' + (p === 3 ? 'hit' : '') + '" style="--k:' + p + '"><circle cx="12" cy="8" r="5.5" fill="currentColor"/><path d="M2 31c0-8 4-13 10-13s10 5 10 13z" fill="currentColor"/></svg>');
+  }
+  var amb = $('amb');
+  for(var a=0;a<16;a++){
+    var ai = document.createElement('i');
+    ai.style.setProperty('--x', ((a * 37 + 11) % 100) + '%');
+    ai.style.setProperty('--sz', (0.45 + ((a * 13) % 7) / 10).toFixed(2));
+    ai.style.setProperty('--t', (16 + (a * 5) % 14) + 's');
+    ai.style.setProperty('--dl', '-' + ((a * 3.3) % 20).toFixed(1) + 's');
+    amb.appendChild(ai);
+  }
+
+  /* legendas: uma palavra por vez */
+  slides.forEach(function(s){
+    var c = s.querySelector('.cap'); if(!c) return;
+    var words = c.textContent.trim().split(/\s+/); c.textContent = '';
+    words.forEach(function(w,i){
+      var sp = document.createElement('span'); sp.style.setProperty('--i', i); sp.textContent = w;
+      c.appendChild(sp); c.appendChild(document.createTextNode(' '));
+    });
+  });
+
+  /* barra segmentada */
+  var prevCh = -1;
+  slides.forEach(function(s,i){
+    var b = document.createElement('button'); b.className = 'seg';
+    var ch = +s.dataset.ch;
+    if(i > 0 && ch !== prevCh && ch > 0) b.classList.add('chs');
+    prevCh = ch;
+    b.setAttribute('aria-label','Ir para o slide ' + (i+1) + ': ' + s.getAttribute('aria-label'));
+    b.title = (i+1) + '. ' + s.getAttribute('aria-label');
+    b.innerHTML = '<span></span>';
+    b.addEventListener('click', function(){ go(i); });
+    segs.appendChild(b);
+  });
+
+  function dur(){ return +slides[idx].dataset.dur || 0; }
+  function paint(){
+    var kids = segs.children;
+    for(var i=0;i<kids.length;i++){
+      var w = 0;
+      if(i < idx) w = 100;
+      else if(i === idx) w = dur() ? Math.min(100, elapsed/dur()*100) : 100;
+      kids[i].firstChild.style.width = w + '%';
+    }
+    var now = Math.min(total, starts[idx] + Math.min(elapsed, dur()));
+    countEl.textContent = (idx+1) + ' / ' + slides.length + ' · ' + mmss(now) + ' / ' + mmss(total);
+  }
+  function setIcons(){
+    icPause.hidden = !playing; icPlay.hidden = playing;
+    playBtn.setAttribute('aria-label', playing ? 'Pausar avanço automático' : 'Reproduzir');
+  }
+
+  /* contadores */
+  var counters = [];
+  function fmt(v, dec){ return v.toFixed(dec).replace('.', ','); }
+  function startCounters(slide){
+    counters = [];
+    Array.prototype.forEach.call(slide.querySelectorAll('[data-to]'), function(el){
+      var to = parseFloat(el.dataset.to), dec = +el.dataset.dec || 0;
+      if(reduced){ el.textContent = fmt(to, dec); return; }
+      counters.push({el:el, to:to, dec:dec, t:-(+el.dataset.delay || 0), dur:+el.dataset.dur || 1600});
+      el.textContent = fmt(0, dec);
+    });
+  }
+
+  function go(n){
+    n = Math.max(0, Math.min(slides.length-1, n));
+    idx = n; elapsed = 0; epoch++;
+    slides.forEach(function(s,i){ s.classList.toggle('active', i === n); s.setAttribute('aria-hidden', i === n ? 'false' : 'true'); });
+    var ch = +slides[n].dataset.ch;
+    chapSpans.forEach(function(sp,i){
+      sp.classList.toggle('on', i + 1 === ch);
+      sp.classList.toggle('done', ch > 0 && i + 1 < ch);
+    });
+    startCounters(slides[n]);
+    if(slides[n].dataset.hook === 'book' && !reduced) bookHook(epoch);
+    if(slides[n].dataset.hold) playing = false;
+    paint(); setIcons();
+  }
+
+  function tick(now){
+    var dt = Math.min(now - last, 100); last = now;
+    counters.forEach(function(c){
+      c.t += dt;
+      var pr = Math.max(0, Math.min(1, c.t / c.dur)), e = 1 - Math.pow(1 - pr, 3);
+      c.el.textContent = fmt(c.to * e, c.dec);
+    });
+    if(playing){
+      elapsed += dt;
+      if(dur() && elapsed >= dur()){
+        if(idx < slides.length - 1) go(idx + 1);
+      }
+      paint();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  $('prev').addEventListener('click', function(){ go(idx - 1); });
+  $('next').addEventListener('click', function(){ go(idx + 1); });
+  playBtn.addEventListener('click', function(){
+    if(!playing && slides[idx].dataset.hold){ go(0); playing = true; setIcons(); return; }
+    playing = !playing; setIcons();
+  });
+  var fsBtn = $('fs');
+  if(!document.fullscreenEnabled) fsBtn.hidden = true;
+  function toggleFs(){
+    try{
+      if(document.fullscreenElement) document.exitFullscreen();
+      else app.requestFullscreen().catch(function(){});
+    }catch(e){}
+  }
+  fsBtn.addEventListener('click', toggleFs);
+  var ccBtn = $('cc');
+  function setCC(on){ stage.classList.toggle('nocap', !on); ccBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); try{ localStorage.setItem('mv-cc', on ? '1' : '0'); }catch(e){} }
+  ccBtn.addEventListener('click', function(){ setCC(ccBtn.getAttribute('aria-pressed') !== 'true'); });
+  try{ if(localStorage.getItem('mv-cc') === '0') setCC(false); }catch(e){}
+  document.addEventListener('keydown', function(e){
+    var onBtn = e.target && e.target.tagName === 'BUTTON';
+    if(e.key === 'ArrowRight' || e.key === 'PageDown') go(idx + 1);
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp') go(idx - 1);
+    else if(e.key === ' ' && !onBtn){ e.preventDefault(); playBtn.click(); }
+    else if(e.key === 'c' || e.key === 'C') ccBtn.click();
+    else if(e.key === 'f' || e.key === 'F') toggleFs();
+  });
+
+  /* ---------- o livro sendo escrito ---------- */
+  var stories = [
+    {name:'Dona Lourdes', meta:'84 anos · costureira', title:'O baile de 1962', tone:'#d98e73',
+     text:'Conheci meu Zé num baile na Praça da Estação. Ele pisou no meu pé e pediu desculpa três vezes. Casamos dois anos depois.'},
+    {name:'Seu Geraldo', meta:'91 anos · ferroviário', title:'O apito do trem', tone:'#6f8fc0',
+     text:'Trabalhei trinta anos na estrada de ferro. O apito do trem me acordava antes do galo. Hoje acordo cedo ainda, de saudade.'},
+    {name:'Dona Aparecida', meta:'79 anos · professora rural', title:'A escola de uma sala só', tone:'#8dbfa8',
+     text:'Dei aula numa escola de uma sala só, na roça. Eram doze alunos de idades diferentes. Todo ano eu chorava na formatura.'}
+  ];
+  function sleep(ms, ep){
+    return new Promise(function(res){
+      var left = ms;
+      (function step(){
+        if(ep !== epoch) return res(false);
+        left -= 40;
+        if(left <= 0) return res(true);
+        setTimeout(step, 40);
+      })();
+    });
+  }
+  function typeText(el, text, ep){
+    el.classList.add('typing');
+    var i = 0;
+    return (function loop(){
+      i += 2; el.textContent = text.slice(0, i);
+      if(i >= text.length){ el.textContent = text; el.classList.remove('typing'); return Promise.resolve(true); }
+      return sleep(40, ep).then(function(ok){ return ok ? loop() : false; });
+    })();
+  }
+  function setStory(s, pgn){
+    $('bkName').textContent = s.name; $('bkMeta').textContent = s.meta; $('bkTitle').textContent = s.title;
+    $('bkText').textContent = ''; $('bkText').classList.remove('typing');
+    $('portrait').style.setProperty('--tone', s.tone);
+    $('pgL').textContent = pgn - 1; $('pgR').textContent = pgn;
+  }
+  function fill(n){
+    var t = document.querySelectorAll('#ticks i');
+    for(var k=0;k<t.length;k++) t[k].classList.toggle('on', k < n);
+    $('cnt').textContent = n;
+  }
+  async function bookHook(ep){
+    var leaf = $('leaf');
+    leaf.classList.remove('go');
+    fill(2); setStory(stories[0], 4);
+    if(!await sleep(700, ep)) return;
+    for(var i=0;i<stories.length;i++){
+      var s = stories[i];
+      if(i > 0){
+        leaf.classList.remove('go'); void leaf.offsetWidth; leaf.classList.add('go');
+        if(!await sleep(440, ep)) return;
+        setStory(s, 4 + i*2);
+        if(!await sleep(520, ep)) return;
+        leaf.classList.remove('go');
+      }
+      if(!await typeText($('bkText'), s.text, ep)) return;
+      fill(4 + i*2);
+      if(!await sleep(1100, ep)) return;
+    }
+  }
+
+  go(0);
+  requestAnimationFrame(function(t){ last = t; requestAnimationFrame(tick); });
+})();
+</script>
+
+</body></html>
