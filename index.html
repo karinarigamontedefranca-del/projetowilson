@@ -32,10 +32,10 @@
 body{background:var(--bg);color:var(--ink);font-family:var(--body)}
 button{font:inherit;color:inherit}
 a{color:var(--ochre)}
-.app{max-width:1240px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bg)}
+.app{max-width:1800px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bg)}
 
 /* ---------- palco ---------- */
-.stage{position:relative;container-type:size;aspect-ratio:16/9;width:100%;max-width:min(1200px,max(560px,calc((100vh - 130px) * 16 / 9)));margin:0 auto;overflow:hidden;border-radius:14px;border:1px solid var(--line);
+.stage{position:relative;container-type:size;aspect-ratio:16/9;width:100%;max-width:min(100%,max(560px,calc((100vh - 130px) * 16 / 9)));margin:0 auto;overflow:hidden;border-radius:14px;border:1px solid var(--line);
   background:radial-gradient(60% 80% at 88% 8%,rgba(242,184,75,.16),transparent 60%),radial-gradient(70% 70% at 5% 100%,rgba(141,191,168,.12),transparent 60%),var(--stage)}
 .brand{--u:1cqw;position:absolute;z-index:3;top:calc(var(--u)*2.4);left:calc(var(--u)*5);display:flex;align-items:center;gap:calc(var(--u)*.9);font-size:calc(var(--u)*1.45);letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--muted)}
 .brand i{width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);border-radius:50%;background:var(--ochre);box-shadow:0 0 calc(var(--u)*1.6) var(--ochre);animation:rec 1.6s ease-in-out infinite alternate}
@@ -377,7 +377,7 @@ em{font-style:normal;color:var(--ochre)}
 .slide.active .ck i.on{animation:dotin .5s calc(3.4s + var(--k) * .035s) backwards}
 
 /* ---------- controles ---------- */
-.ctrl{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto 0;max-width:min(1200px,max(560px,calc((100vh - 130px) * 16 / 9)))}
+.ctrl{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px auto 0;max-width:min(100%,max(560px,calc((100vh - 130px) * 16 / 9)))}
 .ctrl button{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.05);display:grid;place-items:center;cursor:pointer}
 .ctrl button:hover{background:rgba(255,255,255,.12)}
 .ctrl button:focus-visible,.seg:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
@@ -391,6 +391,14 @@ em{font-style:normal;color:var(--ochre)}
 .seg::after{content:"";position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;background:rgba(255,255,255,.16);border-radius:4px;z-index:0}
 .seg.chs::before{content:"";position:absolute;left:-2px;top:12px;bottom:12px;width:1px;background:rgba(255,255,255,.35)}
 .count{flex:none;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:96px;text-align:right;line-height:1.25}
+
+/* ---------- tela cheia ---------- */
+.app.full{position:fixed;inset:0;z-index:100;max-width:none;margin:0;padding:0;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.app.full .stage{max-width:none;width:min(100vw,calc(100vh * 16 / 9));border-radius:0;border:0}
+.app.full .ctrl{position:fixed;left:0;right:0;bottom:0;max-width:none;margin:0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(5,16,18,.88);opacity:0;transition:opacity .3s;z-index:5}
+.app.full .ctrl.show,.app.full .ctrl:hover,.app.full .ctrl:focus-within{opacity:1}
+.app.full.idle{cursor:none}
+@media (max-width:720px){.app.full .stage{width:min(100vw,calc(100vh * 9 / 17.5))}}
 
 /* ---------- celular ---------- */
 @media (max-width:720px){
@@ -967,6 +975,7 @@ em{font-style:normal;color:var(--ochre)}
         <div class="ei big a" style="--d:3.6s"><b><span data-to="113" data-dur="1600" data-delay="3600">0</span></b><span>cookies</span></div>
       </div>
       <div class="ck" id="cookies" aria-hidden="true"></div>
+      <p class="note f" style="--d:4s">Valores de referência: 60 livros (30 idosos, 22 bibliotecas, 8 de reserva). A conta é refeita quando chegar o preço real da Gráfica R8.</p>
       <p class="cap">Pedimos orçamento à Gráfica R8. Com o valor por livro, vamos vender cookies na Skema para pagar a impressão.</p>
     </section>
 
@@ -988,7 +997,7 @@ em{font-style:normal;color:var(--ochre)}
 
   <div class="ctrl">
     <button id="prev" aria-label="Slide anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
-    <button id="play" aria-label="Pausar avanço automático"><svg id="icPause" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg><svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M8 5v14l11-7z"/></svg></button>
+    <button id="play" hidden aria-label="Pausar avanço automático"><svg id="icPause" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg><svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M8 5v14l11-7z"/></svg></button>
     <button id="next" aria-label="Próximo slide"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
     <div class="segs" id="segs"></div>
     <span class="count" id="count">1 / 16</span>
@@ -1009,7 +1018,7 @@ em{font-style:normal;color:var(--ochre)}
   var icPause = document.getElementById('icPause');
   var icPlay = document.getElementById('icPlay');
   var chapSpans = Array.prototype.slice.call(document.querySelectorAll('#chap span'));
-  var idx = 0, elapsed = 0, epoch = 0, playing = !reduced, last = performance.now();
+  var idx = 0, elapsed = 0, epoch = 0, playing = false, last = performance.now();
   function $(id){ return document.getElementById(id); }
 
   /* tempo total e acumulado */
@@ -1066,13 +1075,11 @@ em{font-style:normal;color:var(--ochre)}
   function paint(){
     var kids = segs.children;
     for(var i=0;i<kids.length;i++){
-      var w = 0;
-      if(i < idx) w = 100;
-      else if(i === idx) w = dur() ? Math.min(100, elapsed/dur()*100) : 100;
+      var w = i <= idx ? 100 : 0;
       kids[i].firstChild.style.width = w + '%';
     }
     var now = Math.min(total, starts[idx] + Math.min(elapsed, dur()));
-    countEl.textContent = (idx+1) + ' / ' + slides.length + ' · ' + mmss(now) + ' / ' + mmss(total);
+    countEl.textContent = (idx+1) + ' / ' + slides.length;
   }
   function setIcons(){
     icPause.hidden = !playing; icPlay.hidden = playing;
@@ -1131,25 +1138,46 @@ em{font-style:normal;color:var(--ochre)}
     playing = !playing; setIcons();
   });
   var fsBtn = $('fs');
-  if(!document.fullscreenEnabled) fsBtn.hidden = true;
-  function toggleFs(){
-    try{
-      if(document.fullscreenElement) document.exitFullscreen();
-      else app.requestFullscreen().catch(function(){});
-    }catch(e){}
+  var isFull = false, idleT = 0;
+  function setFull(on){
+    isFull = on; app.classList.toggle('full', on);
+    if(on){ try{ var r = app.requestFullscreen && app.requestFullscreen(); if(r && r.catch) r.catch(function(){}); }catch(e){} }
+    else { try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} }
   }
+  function toggleFs(){ setFull(!isFull); }
+  document.addEventListener('fullscreenchange', function(){ if(!document.fullscreenElement && isFull) setFull(false); });
+  var ctrlEl = document.querySelector('.ctrl');
+  document.addEventListener('mousemove', function(){
+    if(!isFull) return;
+    ctrlEl.classList.add('show'); app.classList.remove('idle'); clearTimeout(idleT);
+    idleT = setTimeout(function(){ ctrlEl.classList.remove('show'); app.classList.add('idle'); }, 2200);
+  });
   fsBtn.addEventListener('click', toggleFs);
   var ccBtn = $('cc');
   function setCC(on){ stage.classList.toggle('nocap', !on); ccBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); try{ localStorage.setItem('mv-cc', on ? '1' : '0'); }catch(e){} }
   ccBtn.addEventListener('click', function(){ setCC(ccBtn.getAttribute('aria-pressed') !== 'true'); });
-  try{ if(localStorage.getItem('mv-cc') === '0') setCC(false); }catch(e){}
+  setCC(false); try{ if(localStorage.getItem('mv-cc') === '1') setCC(true); }catch(e){}
   document.addEventListener('keydown', function(e){
     var onBtn = e.target && e.target.tagName === 'BUTTON';
-    if(e.key === 'ArrowRight' || e.key === 'PageDown') go(idx + 1);
-    else if(e.key === 'ArrowLeft' || e.key === 'PageUp') go(idx - 1);
-    else if(e.key === ' ' && !onBtn){ e.preventDefault(); playBtn.click(); }
+    if(e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === 'ArrowDown' || (e.key === ' ' && !onBtn) || e.key === 'Enter' && !onBtn){ e.preventDefault(); go(idx + 1); }
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'ArrowUp'){ e.preventDefault(); go(idx - 1); }
+    else if(e.key === 'Home') go(0);
+    else if(e.key === 'End') go(slides.length - 1);
     else if(e.key === 'c' || e.key === 'C') ccBtn.click();
     else if(e.key === 'f' || e.key === 'F') toggleFs();
+    else if(e.key === 'Escape' && isFull && !document.fullscreenElement) setFull(false);
+  });
+  /* clique no palco e gesto de deslizar também passam os slides */
+  stage.addEventListener('click', function(e){
+    if(e.target.closest('a,button')) return;
+    var r = stage.getBoundingClientRect();
+    go(e.clientX - r.left < r.width * 0.25 ? idx - 1 : idx + 1);
+  });
+  var tx = null;
+  stage.addEventListener('touchstart', function(e){ tx = e.changedTouches[0].clientX; }, {passive:true});
+  stage.addEventListener('touchend', function(e){
+    if(tx === null) return; var dx = e.changedTouches[0].clientX - tx; tx = null;
+    if(Math.abs(dx) > 50){ go(dx < 0 ? idx + 1 : idx - 1); e.preventDefault(); }
   });
 
   /* ---------- o livro sendo escrito ---------- */
